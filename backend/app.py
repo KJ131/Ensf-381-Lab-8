@@ -39,24 +39,41 @@ CORS(app)
 users = deepcopy(SEEDED_USERS)
 
 
-# TODO: Define these Flask routes with @app.route():
-# - GET /users
-#   Return 200 on success. The frontend still expects a JSON array,
-#   so return list(users.values()) instead of the dict directly.
-# - POST /users
-#   Return 201 for a successful create, 400 for invalid input,
-#   and 409 if the id already exists. Since users is a dict keyed by
-#   id, use the id as the lookup key when checking for duplicates.
-# - PUT /users/<user_id>
-#   Return 200 for a successful update, 400 for invalid input,
-#   and 404 if the user does not exist. Update the matching record
-#   with users[user_id] = {...} after confirming the key exists.
-# - DELETE /users/<user_id>
-#   Return 200 for a successful delete and 404 if the user does not
-#   exist. Delete with del users[user_id] after confirming the key
-#   exists.
-#   Exercise2
-# - POST /predict_house_price
+@app.route("/users", methods=["GET"])
+def get_users():
+    return jsonify(list(users.values())), 200
+
+
+@app.route("/users", methods=["POST"])
+def create_user():
+    data = request.json
+    if not data or "id" not in data or "first_name" not in data or "user_group" not in data:
+        return jsonify({"message": "Missing id, first_name, or user_group."}), 400
+    user_id = data["id"]
+    if user_id in users:
+        return jsonify({"message": f"User {user_id} already exists."}), 409
+    users[user_id] = {"id": user_id, "first_name": data["first_name"], "user_group": data["user_group"]}
+    return jsonify({"id": user_id, "first_name": data["first_name"], "user_group": data["user_group"], "message": f"Created user {user_id}."}), 201
+
+
+@app.route("/users/<user_id>", methods=["PUT"])
+def update_user(user_id):
+    data = request.json
+    if not data or "first_name" not in data or "user_group" not in data:
+        return jsonify({"message": "Missing first_name or user_group."}), 400
+    if user_id not in users:
+        return jsonify({"message": f"User {user_id} was not found."}), 404
+    users[user_id] = {"id": user_id, "first_name": data["first_name"], "user_group": data["user_group"]}
+    return jsonify({"id": user_id, "first_name": data["first_name"], "user_group": data["user_group"], "message": f"Updated user {user_id}."}), 200
+
+
+@app.route("/users/<user_id>", methods=["DELETE"])
+def delete_user(user_id):
+    if user_id not in users:
+        return jsonify({"message": f"User {user_id} was not found."}), 404
+    del users[user_id]
+    return jsonify({"message": f"Deleted user {user_id}."}), 200
+
 
 
 @app.route("/predict_house_price", methods=["POST"])
